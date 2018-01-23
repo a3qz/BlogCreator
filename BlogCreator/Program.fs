@@ -4,6 +4,7 @@
 open System.IO
 open System.Diagnostics
 open System.IO.Packaging
+open System.Web.UI
 open DocumentFormat.OpenXml.Packaging 
 open DocumentFormat.OpenXml.Wordprocessing 
 open System.Text
@@ -32,12 +33,12 @@ let rec GetPlainText (element : OpenXmlElement ) : string=
     element.Elements() 
         |> Seq.iter (fun (v: OpenXmlElement) -> match v.LocalName with 
                                                 | "t" -> PlainTextInWord.Append v.InnerText |> ignore
-                                                | "cr" -> PlainTextInWord.Append Environment.NewLine|> ignore
-                                                | "br" -> PlainTextInWord.Append Environment.NewLine|> ignore
-                                                | "tab" -> PlainTextInWord.Append "\t"|> ignore
+                                                | "cr" -> PlainTextInWord.Append "<br />"|> ignore
+                                                | "br" -> PlainTextInWord.Append "<br />"|> ignore
+                                                | "tab" -> PlainTextInWord.Append "&emsp;"|> ignore
                                                 | "p" ->
                                                     PlainTextInWord.Append (GetPlainText v) |> ignore
-                                                    PlainTextInWord.AppendLine Environment.NewLine |> ignore
+                                                    PlainTextInWord.AppendLine "<br />" |> ignore
                                                 | _ -> PlainTextInWord.Append (GetPlainText v)|> ignore)
         
  
@@ -45,8 +46,7 @@ let rec GetPlainText (element : OpenXmlElement ) : string=
 
 // Given a filename, return the text of that file as a string
 let FileReader filename = 
-    let header = BLOG_PATH
-    let fullname = header + filename
+    let fullname = BLOG_PATH + filename
     let byteArray = File.ReadAllBytes fullname
     
     use mem = new MemoryStream() 
@@ -56,12 +56,47 @@ let FileReader filename =
     let bod = doc.MainDocumentPart.Document.Body; 
     let plaintext = GetPlainText bod
     plaintext
-    
+
+// Taken from stackoverflow
+let (|Prefix|_|) (p:string) (s:string) =
+    if s.StartsWith(p) then
+        Some(s.Substring(p.Length))
+    else
+        None
+
+let HTMLMaker (text: string) = 
+    let stringWriter = new StringWriter()
+    use writer = new HtmlTextWriter(stringWriter)
+    writer.RenderBeginTag HtmlTextWriterTag.Html
+    writer.RenderBeginTag HtmlTextWriterTag.Head
+    writer.RenderBeginTag HtmlTextWriterTag.Title
+    text.Split [|'~'|]  
+    |> Seq.iter (fun t -> match t with 
+                            | Prefix "Reading" rest -> 
+                                            writer.Write t
+                                            writer.RenderEndTag()
+                                            writer.RenderEndTag()
+                                            writer.RenderBeginTag HtmlTextWriterTag.Body
+                                            writer.RenderBeginTag HtmlTextWriterTag.H1
+                                            writer.Write t
+                                            writer.RenderEndTag()
+                            | Prefix "Sat" rest -> writer.Write ""
+                            | Prefix "Sun" rest -> writer.Write ""
+                            | _ -> 
+                                    writer.RenderBeginTag HtmlTextWriterTag.P
+                                    writer.Write t
+                                    writer.RenderEndTag()
+                                    writer.RenderEndTag()
+                                    )
+    writer.RenderEndTag()
+    string stringWriter
+
 // Effectivley main; get all the files in the directory and call FileReader on them
 Directory.GetFiles(BLOG_PATH, "*") 
     |> Array.map Path.GetFileName 
     |> Array.map FileReader 
+    |> Array.map HTMLMaker
     |> Array.iter (printfn "%s")
 
 // Makes it so that I can read the output without the window closing
-System.Console.ReadLine();
+System.Console.ReadLine() |> ignore
