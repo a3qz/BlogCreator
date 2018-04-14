@@ -14,12 +14,13 @@ open System
 // Path to the folder where the blogs are stored
 
 System.Environment.GetCommandLineArgs() |> printfn "args: %A" 
+System.Environment.GetCommandLineArgs().[1] |> printfn "args: %s"
 System.Console.ReadLine() |> ignore
 
-let BLOG_CLASS = "history"
-if System.Environment.GetCommandLineArgs().Length > 1 then BLOG_CLASS = System.Environment.GetCommandLineArgs().[1]
-    else BLOG_CLASS = BLOG_CLASS
-    |> ignore
+let BLOG_CLASS_HARD = "history"
+let BLOG_CLASS =  if System.Environment.GetCommandLineArgs().Length > 1 then System.Environment.GetCommandLineArgs().[1] else BLOG_CLASS_HARD
+
+
 let BLOG_DOCUMENT_SOURCE_PATH = "C:\\Users\\Ryan\\Documents\\"+BLOG_CLASS+"blogs\\"
 let BLOG_HTML_DESTINTION_PATH = "C:\\Users\\Ryan\\Documents\\a3qz.github.io\\"+BLOG_CLASS+"\\blogs\\"
 let SITE_RSS_DESTINATION_PATH = "C:\\Users\\Ryan\\Documents\\a3qz.github.io\\"+BLOG_CLASS+"\\rss.xml"
