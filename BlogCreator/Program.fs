@@ -12,7 +12,14 @@ open DocumentFormat.OpenXml
 open System
 
 // Path to the folder where the blogs are stored
-let BLOG_CLASS = "ethics"
+
+System.Environment.GetCommandLineArgs() |> printfn "args: %A" 
+System.Console.ReadLine() |> ignore
+
+let BLOG_CLASS = "history"
+if System.Environment.GetCommandLineArgs().Length > 1 then BLOG_CLASS = System.Environment.GetCommandLineArgs().[1]
+    else BLOG_CLASS = BLOG_CLASS
+    |> ignore
 let BLOG_DOCUMENT_SOURCE_PATH = "C:\\Users\\Ryan\\Documents\\"+BLOG_CLASS+"blogs\\"
 let BLOG_HTML_DESTINTION_PATH = "C:\\Users\\Ryan\\Documents\\a3qz.github.io\\"+BLOG_CLASS+"\\blogs\\"
 let SITE_RSS_DESTINATION_PATH = "C:\\Users\\Ryan\\Documents\\a3qz.github.io\\"+BLOG_CLASS+"\\rss.xml"
@@ -109,6 +116,9 @@ let blog = Rss.GetSample()
 let ItemBuilder (content: string) = 
     content
 
+
+
+
 let ethicsbloghead = """<?xml version="1.0"?>
 <rss version="2.0"
      xmlns:sy="http://purl.org/rss/1.0/modules/syndication/">
@@ -121,14 +131,28 @@ let ethicsbloghead = """<?xml version="1.0"?>
     <link>https://a3qz.github.io</link>
     <description>Blog for CSE 40175</description>
 """
-let ethicsblogtail =   """</channel>
+let blogtail =   """</channel>
 </rss>"""
+
+let hocbloghead = """<?xml version="1.0"?>
+<rss version="2.0"
+     xmlns:sy="http://purl.org/rss/1.0/modules/syndication/">
+  <channel>
+    <language>en</language>
+    
+    <sy:updatePeriod>hourly</sy:updatePeriod>
+    <sy:updateFrequency>1</sy:updateFrequency>
+    <title>a3qz History of Computing Blog</title>
+    <link>https://a3qz.github.io</link>
+    <description>Blog for CSE 40850</description>
+"""
+
 
 let itemtext = """<item><title>$</title>
       <link>https://a3qz.github.io/ethics/blogs/blog#.html</link>
       <pubDate>&</pubDate></item>"""
 
-
+let blogheads = Map.empty.Add("history", hocbloghead).Add("ethics",ethicsbloghead)
 
 // Take a string of html with my stupid ~ as delimiter thing and split it, then write out the html 
 let RSSMaker i (text: string) = 
@@ -170,7 +194,7 @@ Directory.GetFiles(BLOG_DOCUMENT_SOURCE_PATH, "*")
 
 
 let streamWritertemp = new StreamWriter(SITE_RSS_DESTINATION_PATH, false)
-streamWritertemp.Write ethicsbloghead
+blogheads.[BLOG_CLASS] |>streamWritertemp.Write 
 streamWritertemp.Close() |> ignore
 Directory.GetFiles(BLOG_DOCUMENT_SOURCE_PATH, "*") 
     |> Array.map Path.GetFileName 
@@ -178,7 +202,7 @@ Directory.GetFiles(BLOG_DOCUMENT_SOURCE_PATH, "*")
     |> Array.mapi RSSMaker
     |> ignore
 let streamWritertemp2 = new StreamWriter(SITE_RSS_DESTINATION_PATH, true)
-streamWritertemp2.Write ethicsblogtail
+streamWritertemp2.Write blogtail
 streamWritertemp2.Close() |> ignore
 // Makes it so that I can read the output without the window closing
-System.Console.ReadLine() |> ignore
+//System.Console.ReadLine() |> ignore
